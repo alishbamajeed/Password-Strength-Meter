@@ -1,5 +1,7 @@
 import re
 import streamlit as st
+import random
+import string
 
 # Password strength checker function
 def password_strength(password):
@@ -46,26 +48,38 @@ def password_strength(password):
     
     return strength, feedback, score
 
+# Password generator
+def generate_password(length):
+    characters = string.ascii_letters + string.digits + '!@#$%^&*'
+    return ''.join(random.choice(characters) for _ in range(length))
+
 # Streamlit app layout
 def main():
     st.set_page_config(page_title="Password Strength Meter", page_icon="🔐")
     st.title("🔐 Password Strength Meter")
     st.markdown("### Ensure your passwords are secure and strong!")
-    st.markdown("Enter a password to check its strength and receive real-time feedback on how to improve it.")
+    st.markdown("Enter a password to check its strength or generate a strong one.")
+
+    # History of checked passwords
+    if 'password_history' not in st.session_state:
+        st.session_state['password_history'] = []
     
-  
     # Password input field
     password = st.text_input("Enter your password:", type="password")
-    
-    # Check password strength on button click
+
+    # Password length selection and generation
+    length = st.selectbox("Select password length to generate:", [6, 8, 12])
+    if st.button("Generate Password"):
+        password = generate_password(length)
+        st.text(f"Generated Password ({length} chars): {password}")
+        st.session_state['password_history'].append(password)
+
+    # Check password strength
     if st.button("Check Password Strength"):
         if password:
             strength, feedback, score = password_strength(password)
-            
-            # Progress bar for strength
             st.progress(score / 5)
             
-            # Display password strength with dynamic coloring
             if strength == "Weak":
                 st.error(f"🔴 Password strength: **{strength}**")
             elif strength == "Moderate":
@@ -73,17 +87,22 @@ def main():
             else:
                 st.success(f"🟢 Password strength: **{strength}**")
                 st.balloons()
-            
-            # Provide feedback for improvement
+
+            # Feedback
             if feedback:
                 st.subheader("🔧 Suggestions to improve your password:")
                 for suggestion in feedback:
                     st.markdown(f"- {suggestion}")
-            else:
-                st.markdown("🎯 Your password is **secure and strong**! Great job!")
-        else:
-            st.warning("⚠️ Please enter a password.")
 
-# Run the app
+            # Save to history
+            st.session_state['password_history'].append(password)
+        else:
+            st.warning("⚠️ Please enter a password or generate one.")
+
+    # Show password history
+    st.subheader("📜 Password History:")
+    for pwd in st.session_state['password_history'][-5:]:  # Show last 5 passwords
+        st.text(pwd)
+
 if __name__ == "__main__":
     main()
